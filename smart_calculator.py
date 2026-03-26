@@ -1,162 +1,218 @@
 # ============================================================
-# Smart Calculator with History
+# Cognitive AI Simulator
 # Author: Arpit Pareek | Shrimadhopur, Rajasthan, India
-# Purpose: A self-learning Python project demonstrating
-#          functions, loops, conditionals, and recursion
 # GitHub: github.com/arpitprk89
+#
+# A rule-based system simulating three core aspects of
+# human cognition:
+#   1. Emotion Detection (sentiment analysis via keywords)
+#   2. Memory Retention (context tracking across session)
+#   3. Decision Analysis (response adaptation based on state)
 # ============================================================
 
-import math
+# ─────────────────────────────────────────────
+# MODULE 1: EMOTION DETECTION
+# Classifies user input as Positive, Negative, or Neutral
+# using keyword-based sentiment mapping.
+# ─────────────────────────────────────────────
 
-history = []  # Store calculation history
+POSITIVE_WORDS = [
+    "happy", "great", "good", "love", "excited", "wonderful",
+    "amazing", "fantastic", "joy", "excellent", "awesome",
+    "glad", "cheerful", "motivated", "hopeful", "proud"
+]
 
-def add(a, b):
-    return a + b
+NEGATIVE_WORDS = [
+    "sad", "bad", "hate", "angry", "frustrated", "terrible",
+    "awful", "horrible", "depressed", "worried", "anxious",
+    "upset", "stressed", "scared", "confused", "lost"
+]
 
-def subtract(a, b):
-    return a - b
+def detect_emotion(text):
+    """
+    Scans user input for sentiment keywords.
+    Returns: emotion label and confidence score.
+    """
+    text_lower = text.lower()
+    words = text_lower.split()
 
-def multiply(a, b):
-    return a * b
+    positive_count = sum(1 for word in words if word in POSITIVE_WORDS)
+    negative_count = sum(1 for word in words if word in NEGATIVE_WORDS)
 
-def divide(a, b):
-    if b == 0:
-        return "Error: Cannot divide by zero!"
-    return a / b
+    total = positive_count + negative_count
 
-def power(a, b):
-    return a ** b
+    if total == 0:
+        return "Neutral", 0.5
 
-def square_root(a):
-    if a < 0:
-        return "Error: Cannot find square root of negative number!"
-    return math.sqrt(a)
+    positive_ratio = positive_count / total
 
-def factorial(n):
-    """Recursive function to calculate factorial"""
-    if n < 0:
-        return "Error: Factorial not defined for negative numbers!"
-    if n == 0 or n == 1:
-        return 1
-    return n * factorial(n - 1)  # RECURSION used here
-
-def fibonacci(n):
-    """Recursive Fibonacci sequence"""
-    if n <= 0:
-        return []
-    if n == 1:
-        return [0]
-    if n == 2:
-        return [0, 1]
-    sequence = fibonacci(n - 1)  # RECURSION used here
-    sequence.append(sequence[-1] + sequence[-2])
-    return sequence
-
-def show_history():
-    if not history:
-        print("No calculations yet!")
+    if positive_ratio > 0.6:
+        confidence = round(0.5 + (positive_ratio * 0.5), 2)
+        return "Positive", confidence
+    elif positive_ratio < 0.4:
+        confidence = round(0.5 + ((1 - positive_ratio) * 0.5), 2)
+        return "Negative", confidence
     else:
-        print("\n--- Calculation History ---")
-        for i, record in enumerate(history, 1):
-            print(f"{i}. {record}")
-        print("---------------------------\n")
+        return "Mixed", 0.5
 
-def save_to_history(expression, result):
-    history.append(f"{expression} = {result}")
 
-def display_menu():
-    print("\n" + "="*45)
-    print("       SMART CALCULATOR by Arpit Pareek")
-    print("="*45)
-    print("1. Addition          (+)")
-    print("2. Subtraction       (-)")
-    print("3. Multiplication    (*)")
-    print("4. Division          (/)")
-    print("5. Power             (a^b)")
-    print("6. Square Root       (√)")
-    print("7. Factorial         (n!)")
-    print("8. Fibonacci Series")
-    print("9. View History")
-    print("0. Exit")
-    print("="*45)
+# ─────────────────────────────────────────────
+# MODULE 2: MEMORY RETENTION
+# Tracks conversation history and user emotional
+# patterns across the session.
+# ─────────────────────────────────────────────
 
-def get_number(prompt):
-    while True:
-        try:
-            return float(input(prompt))
-        except ValueError:
-            print("Please enter a valid number!")
+class SessionMemory:
+    """
+    Simulates short-term cognitive memory.
+    Stores interaction history and detects emotional trends.
+    """
+
+    def __init__(self):
+        self.history = []          # Full conversation log
+        self.emotion_log = []      # Sequence of detected emotions
+        self.user_name = None      # Remembered from first input
+
+    def remember(self, user_input, emotion, response):
+        self.history.append({
+            "input": user_input,
+            "emotion": emotion,
+            "response": response
+        })
+        self.emotion_log.append(emotion)
+
+    def get_dominant_emotion(self):
+        """Returns the most frequent emotion in this session."""
+        if not self.emotion_log:
+            return "Neutral"
+        return max(set(self.emotion_log), key=self.emotion_log.count)
+
+    def get_turn_count(self):
+        return len(self.history)
+
+    def recall_last(self):
+        """Returns the last interaction."""
+        if self.history:
+            return self.history[-1]
+        return None
+
+    def show_history(self):
+        if not self.history:
+            print("  No interactions recorded yet.")
+            return
+        print("\n  --- Session Memory Log ---")
+        for i, entry in enumerate(self.history, 1):
+            print(f"  [{i}] You: {entry['input']}")
+            print(f"       Emotion: {entry['emotion']} | Response: {entry['response']}")
+        print("  --------------------------\n")
+
+
+# ─────────────────────────────────────────────
+# MODULE 3: DECISION ANALYSIS
+# Adapts system response based on detected emotion
+# and session memory context — simulating basic
+# human-like reasoning in response generation.
+# ─────────────────────────────────────────────
+
+def make_decision(emotion, memory):
+    """
+    Decision tree that selects a response strategy
+    based on current emotion and past session context.
+    """
+    turn = memory.get_turn_count()
+    dominant = memory.get_dominant_emotion()
+
+    # Opening turn — no memory yet
+    if turn == 0:
+        if emotion == "Positive":
+            return "You seem to be in a good state. Let's keep that going."
+        elif emotion == "Negative":
+            return "I notice some difficulty in what you've shared. I'm here to help."
+        else:
+            return "I'm listening. Tell me more about what's on your mind."
+
+    # Subsequent turns — memory-aware decisions
+    if emotion == "Positive":
+        if dominant == "Negative":
+            return "This is a shift — you seem better than earlier in our conversation."
+        return "Consistent positive state detected. You're doing well."
+
+    elif emotion == "Negative":
+        if dominant == "Positive":
+            return "Something seems to have changed. Earlier you seemed okay — what happened?"
+        elif dominant == "Negative":
+            return "You've been in a difficult state throughout. Consider talking to someone you trust."
+        return "I can sense this is hard. Take your time."
+
+    elif emotion == "Mixed":
+        return "Your thoughts seem mixed right now. That's okay — complexity is part of thinking."
+
+    else:
+        return "Understood. I'm processing what you've shared."
+
+
+# ─────────────────────────────────────────────
+# MAIN INTERFACE
+# Ties all three modules together into an
+# interactive cognitive simulation loop.
+# ─────────────────────────────────────────────
+
+def display_header():
+    print("\n" + "=" * 55)
+    print("   COGNITIVE AI SIMULATOR — by Arpit Pareek")
+    print("   Emotion Detection | Memory | Decision Analysis")
+    print("=" * 55)
+    print("  Type 'memory' to view session log")
+    print("  Type 'status' to see your emotional pattern")
+    print("  Type 'exit' to end the session")
+    print("=" * 55 + "\n")
+
 
 def main():
-    print("\nWelcome to Smart Calculator!")
-    print("Built by Arpit Pareek as a Python learning project.")
-    
+    display_header()
+    memory = SessionMemory()
+
+    # Greet and remember name
+    name = input("  Before we begin — what's your name? ").strip()
+    if name:
+        memory.user_name = name
+        print(f"\n  Hello, {name}. This system will track your emotional state")
+        print("  and adapt its responses based on what you share.\n")
+
     while True:
-        display_menu()
-        choice = input("Enter your choice: ").strip()
-        
-        if choice == '0':
-            print("\nThank you for using Smart Calculator!")
-            print("- Arpit Pareek | Rajasthan, India")
+        user_input = input(f"  {memory.user_name or 'You'}: ").strip()
+
+        if not user_input:
+            continue
+
+        # Special commands
+        if user_input.lower() == "exit":
+            dominant = memory.get_dominant_emotion()
+            print(f"\n  Session ended after {memory.get_turn_count()} interactions.")
+            print(f"  Your dominant emotional state this session: {dominant}")
+            print(f"  Thank you, {memory.user_name or 'friend'}. Take care.\n")
             break
-            
-        elif choice == '1':
-            a = get_number("Enter first number: ")
-            b = get_number("Enter second number: ")
-            result = add(a, b)
-            save_to_history(f"{a} + {b}", result)
-            print(f"\nResult: {a} + {b} = {result}")
-            
-        elif choice == '2':
-            a = get_number("Enter first number: ")
-            b = get_number("Enter second number: ")
-            result = subtract(a, b)
-            save_to_history(f"{a} - {b}", result)
-            print(f"\nResult: {a} - {b} = {result}")
-            
-        elif choice == '3':
-            a = get_number("Enter first number: ")
-            b = get_number("Enter second number: ")
-            result = multiply(a, b)
-            save_to_history(f"{a} * {b}", result)
-            print(f"\nResult: {a} * {b} = {result}")
-            
-        elif choice == '4':
-            a = get_number("Enter first number: ")
-            b = get_number("Enter second number: ")
-            result = divide(a, b)
-            save_to_history(f"{a} / {b}", result)
-            print(f"\nResult: {a} / {b} = {result}")
-            
-        elif choice == '5':
-            a = get_number("Enter base: ")
-            b = get_number("Enter exponent: ")
-            result = power(a, b)
-            save_to_history(f"{a}^{b}", result)
-            print(f"\nResult: {a}^{b} = {result}")
-            
-        elif choice == '6':
-            a = get_number("Enter number: ")
-            result = square_root(a)
-            save_to_history(f"sqrt({a})", result)
-            print(f"\nResult: sqrt({a}) = {result}")
-            
-        elif choice == '7':
-            a = int(get_number("Enter number for factorial: "))
-            result = factorial(a)
-            save_to_history(f"{a}!", result)
-            print(f"\nResult: {a}! = {result}")
-            
-        elif choice == '8':
-            n = int(get_number("How many Fibonacci numbers? "))
-            result = fibonacci(n)
-            print(f"\nFibonacci Series ({n} terms): {result}")
-            
-        elif choice == '9':
-            show_history()
-            
-        else:
-            print("Invalid choice! Please try again.")
+
+        elif user_input.lower() == "memory":
+            memory.show_history()
+            continue
+
+        elif user_input.lower() == "status":
+            dominant = memory.get_dominant_emotion()
+            turns = memory.get_turn_count()
+            print(f"\n  Turns so far: {turns}")
+            print(f"  Dominant emotion this session: {dominant}\n")
+            continue
+
+        # Core pipeline: Detect → Decide → Remember
+        emotion, confidence = detect_emotion(user_input)
+        response = make_decision(emotion, memory)
+        memory.remember(user_input, emotion, response)
+
+        # Output
+        print(f"\n  [Emotion Detected: {emotion} | Confidence: {confidence}]")
+        print(f"  System: {response}\n")
+
 
 if __name__ == "__main__":
     main()
