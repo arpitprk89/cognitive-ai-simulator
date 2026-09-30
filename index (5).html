@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cognitive AI Simulator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #14161a;
+    --panel: #1b1e24;
+    --panel-raised: #20242b;
+    --line: #2c313a;
+    --brass: #c98a4b;
+    --brass-soft: rgba(201,138,75,.18);
+    --ivory: #ece6da;
+    --ivory-dim: #9a988f;
+    --red: #c15c4a;
+    --blue: #6f9bb0;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ivory);font-family:'IBM Plex Mono',monospace;}
+  body{min-height:100vh;}
+  .wrap{max-width:1180px;margin:0 auto;padding:56px 28px 80px;}
+  header{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;border-bottom:1px solid var(--line);padding-bottom:28px;margin-bottom:40px;flex-wrap:wrap;}
+  h1{font-family:'Fraunces',serif;font-weight:500;font-size:clamp(28px,4vw,44px);margin:0;letter-spacing:-0.01em;color:var(--ivory);}
+  .tag{color:var(--brass);font-size:13px;margin-top:8px;max-width:520px;line-height:1.5;}
+  .meta{font-size:12px;color:var(--ivory-dim);text-align:right;line-height:1.8;}
+  .meta b{color:var(--ivory);}
+
+  .grid{display:grid;grid-template-columns:1.1fr 1fr;gap:28px;}
+  @media (max-width:880px){.grid{grid-template-columns:1fr;}}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:2px;padding:28px;}
+  .panel h2{font-family:'Fraunces',serif;font-weight:500;font-size:19px;margin:0 0 6px;color:var(--ivory);}
+  .panel .sub{font-size:12px;color:var(--ivory-dim);margin-bottom:22px;line-height:1.6;}
+
+  .scenario{border:1px solid var(--line);background:var(--panel-raised);padding:20px;margin-bottom:16px;}
+  .scenario .prompt{font-size:14px;line-height:1.65;color:var(--ivory);margin-bottom:16px;font-family:'Fraunces',serif;font-size:17px;}
+  .options{display:flex;flex-direction:column;gap:10px;}
+  .opt{
+    text-align:left;background:transparent;border:1px solid var(--line);color:var(--ivory);
+    padding:13px 16px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;cursor:pointer;
+    display:flex;justify-content:space-between;gap:14px;transition:border-color .15s ease, background .15s ease;
+  }
+  .opt:hover{border-color:var(--brass);background:var(--brass-soft);}
+  .opt .k{color:var(--ivory-dim);}
+  .opt:disabled{opacity:.35;cursor:default;}
+  .opt:disabled:hover{background:transparent;border-color:var(--line);}
+
+  .progress-line{font-size:11px;color:var(--ivory-dim);margin-top:6px;}
+  .reset{margin-top:18px;background:none;border:1px solid var(--line);color:var(--ivory-dim);font-family:'IBM Plex Mono',monospace;font-size:11px;padding:9px 14px;cursor:pointer;}
+  .reset:hover{border-color:var(--brass);color:var(--brass);}
+
+  .gauges{display:flex;flex-direction:column;gap:18px;margin-bottom:26px;}
+  .gauge-row{display:flex;align-items:center;gap:14px;}
+  .gauge-label{width:78px;font-size:11.5px;color:var(--ivory-dim);flex-shrink:0;}
+  .gauge-track{flex:1;height:6px;background:var(--panel-raised);border:1px solid var(--line);position:relative;overflow:hidden;}
+  .gauge-fill{height:100%;transition:width .5s cubic-bezier(.4,0,.2,1);}
+  .gauge-val{width:38px;text-align:right;font-size:12px;color:var(--ivory);flex-shrink:0;}
+
+  .fill-mood{background:linear-gradient(90deg,var(--blue),var(--brass));}
+  .fill-stress{background:linear-gradient(90deg,var(--brass),var(--red));}
+  .fill-focus{background:var(--brass);}
+  .fill-confidence{background:var(--blue);}
+
+  .analysis{border-top:1px solid var(--line);padding-top:20px;margin-top:4px;}
+  .analysis h3{font-family:'Fraunces',serif;font-size:14px;font-weight:500;margin:0 0 10px;color:var(--ivory);}
+  .analysis p{font-size:12px;line-height:1.7;color:var(--ivory-dim);margin:0;}
+  .analysis .verdict{color:var(--brass);}
+
+  .memory{margin-top:26px;}
+  .memory h3{font-family:'Fraunces',serif;font-size:14px;font-weight:500;margin:0 0 12px;color:var(--ivory);}
+  .memlog{display:flex;flex-direction:column;gap:0;max-height:260px;overflow-y:auto;border-top:1px solid var(--line);}
+  .memlog::-webkit-scrollbar{width:6px;}
+  .memlog::-webkit-scrollbar-thumb{background:var(--line);}
+  .mem-item{padding:12px 0;border-bottom:1px solid var(--line);font-size:11.5px;line-height:1.6;}
+  .mem-item .t{color:var(--ivory-dim);}
+  .mem-item .d{color:var(--ivory);margin-top:2px;}
+  .mem-item .delta{color:var(--brass);font-size:10.5px;margin-top:3px;}
+  .empty-mem{color:var(--ivory-dim);font-size:12px;padding:14px 0;}
+
+  footer{margin-top:60px;border-top:1px solid var(--line);padding-top:22px;font-size:11px;color:var(--ivory-dim);display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+  footer a{color:var(--brass);text-decoration:none;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <h1>Cognitive AI Simulator</h1>
+      <div class="tag">A small model of how a student's cognitive state shifts under decisions — tracking mood, stress, focus and confidence, and keeping a running memory of what led there.</div>
+    </div>
+    <div class="meta">by <b>Arpit Pareek</b><br>Python + browser build<br>emotion state · decision analysis · memory log</div>
+  </header>
+
+  <div class="grid">
+
+    <div class="panel">
+      <h2>Scenario</h2>
+      <div class="sub">Each choice is scored on a simple utility model (effort vs. relief vs. long-term focus) and updates the state on the right.</div>
+      <div id="scenarioBox" class="scenario">
+        <div class="prompt" id="promptText">Loading scenario…</div>
+        <div class="options" id="optionsBox"></div>
+      </div>
+      <div class="progress-line" id="progressLine">Decision 0 of 8</div>
+      <button class="reset" id="resetBtn">Reset simulation</button>
+
+      <div class="analysis">
+        <h3>Decision analysis</h3>
+        <p id="analysisText">Make a choice to see the reasoning behind how it changed the state.</p>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Cognitive state</h2>
+      <div class="sub">Derived from the running sequence of decisions, not from a single input.</div>
+
+      <div class="gauges">
+        <div class="gauge-row">
+          <div class="gauge-label">Mood</div>
+          <div class="gauge-track"><div class="gauge-fill fill-mood" id="barMood" style="width:60%"></div></div>
+          <div class="gauge-val" id="valMood">60</div>
+        </div>
+        <div class="gauge-row">
+          <div class="gauge-label">Stress</div>
+          <div class="gauge-track"><div class="gauge-fill fill-stress" id="barStress" style="width:35%"></div></div>
+          <div class="gauge-val" id="valStress">35</div>
+        </div>
+        <div class="gauge-row">
+          <div class="gauge-label">Focus</div>
+          <div class="gauge-track"><div class="gauge-fill fill-focus" id="barFocus" style="width:55%"></div></div>
+          <div class="gauge-val" id="valFocus">55</div>
+        </div>
+        <div class="gauge-row">
+          <div class="gauge-label">Confidence</div>
+          <div class="gauge-track"><div class="gauge-fill fill-confidence" id="barConf" style="width:50%"></div></div>
+          <div class="gauge-val" id="valConf">50</div>
+        </div>
+      </div>
+
+      <div class="memory">
+        <h3>Memory</h3>
+        <div class="memlog" id="memLog">
+          <div class="empty-mem">No decisions recorded yet.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>
+    <span>Cognitive AI Simulator — a small, transparent model, not a clinical or diagnostic tool.</span>
+    <span><a href="https://github.com/arpitprk89" target="_blank">github.com/arpitprk89</a></span>
+  </footer>
+
+</div>
+
+<script>
+const scenarios = [
+  {
+    prompt: "It's 11 PM. Tomorrow's Physics test covers a chapter you've only half-finished.",
+    options: [
+      { label: "Push through and finish the chapter tonight", effort: 8, relief: 2, focusGain: -4, moodDelta: -6, stressDelta: 10, confDelta: 3, note: "high short-term coverage, high fatigue cost" },
+      { label: "Study the highest-weight topics only, sleep on time", effort: 4, relief: 6, focusGain: 3, moodDelta: 2, stressDelta: -3, confDelta: 4, note: "targeted effort, protects tomorrow's focus" },
+      { label: "Skip it, tell yourself you'll manage", effort: 0, relief: 4, focusGain: -2, moodDelta: 1, stressDelta: 6, confDelta: -6, note: "short relief, compounding risk" }
+    ]
+  },
+  {
+    prompt: "You solved a problem two different ways and got two different answers.",
+    options: [
+      { label: "Re-derive both from first principles until they agree", effort: 7, relief: -1, focusGain: 6, moodDelta: 3, stressDelta: 2, confDelta: 8, note: "slow, but converts confusion into understanding" },
+      { label: "Trust whichever method you used last time", effort: 1, relief: 5, focusGain: -1, moodDelta: 1, stressDelta: -1, confDelta: -3, note: "fast, leaves the gap unresolved" },
+      { label: "Ask a friend and move on without checking why", effort: 2, relief: 4, focusGain: 0, moodDelta: 2, stressDelta: 0, confDelta: -1, note: "outsourced, understanding not internalised" }
+    ]
+  },
+  {
+    prompt: "You've been at your desk for 90 minutes straight and your attention is drifting.",
+    options: [
+      { label: "Take a real 10-minute break, away from the desk", effort: 2, relief: 7, focusGain: 9, moodDelta: 5, stressDelta: -6, confDelta: 2, note: "restores focus faster than pushing through" },
+      { label: "Switch to a different subject instead of resting", effort: 5, relief: 3, focusGain: 2, moodDelta: 1, stressDelta: 1, confDelta: 1, note: "some relief, fatigue not actually cleared" },
+      { label: "Force another 30 minutes on the same topic", effort: 8, relief: -3, focusGain: -8, moodDelta: -5, stressDelta: 7, confDelta: -2, note: "diminishing returns, raises frustration" }
+    ]
+  },
+  {
+    prompt: "Your friend scored higher on a test you both prepared for the same way.",
+    options: [
+      { label: "Ask them what they did differently", effort: 3, relief: 2, focusGain: 3, moodDelta: 1, stressDelta: -2, confDelta: 3, note: "converts comparison into information" },
+      { label: "Assume you're just not as capable", effort: 0, relief: -4, focusGain: -3, moodDelta: -9, stressDelta: 5, confDelta: -10, note: "no new information, heavy confidence cost" },
+      { label: "Ignore it completely and move on", effort: 0, relief: 2, focusGain: 0, moodDelta: 0, stressDelta: -1, confDelta: 0, note: "neutral, but also learns nothing" }
+    ]
+  },
+  {
+    prompt: "You have three assignments due the same week.",
+    options: [
+      { label: "List them by deadline and effort, then start the hardest first", effort: 6, relief: 3, focusGain: 5, moodDelta: 3, stressDelta: -5, confDelta: 5, note: "planning reduces perceived load before work even starts" },
+      { label: "Start with whichever feels easiest", effort: 4, relief: 5, focusGain: 1, moodDelta: 2, stressDelta: -1, confDelta: 1, note: "quick wins, but hardest task still looms" },
+      { label: "Avoid planning, hope it sorts itself out", effort: 0, relief: 3, focusGain: -3, moodDelta: -1, stressDelta: 8, confDelta: -4, note: "load doesn't shrink, only gets closer" }
+    ]
+  },
+  {
+    prompt: "A teacher points out a mistake in front of the class.",
+    options: [
+      { label: "Ask a clarifying question about the correction", effort: 3, relief: 1, focusGain: 4, moodDelta: -1, stressDelta: 1, confDelta: 4, note: "turns a public correction into private understanding" },
+      { label: "Stay quiet and privately feel embarrassed", effort: 0, relief: -2, focusGain: -4, moodDelta: -7, stressDelta: 4, confDelta: -6, note: "emotional cost without resolving the gap" },
+      { label: "Note it down to revisit after class", effort: 2, relief: 3, focusGain: 2, moodDelta: 0, stressDelta: -1, confDelta: 2, note: "measured, delayed but real follow-through" }
+    ]
+  },
+  {
+    prompt: "You finally understand a topic you'd struggled with for weeks.",
+    options: [
+      { label: "Try explaining it out loud, to yourself or someone else", effort: 4, relief: 5, focusGain: 5, moodDelta: 6, stressDelta: -4, confDelta: 7, note: "explaining exposes any remaining gaps" },
+      { label: "Move on immediately to the next topic", effort: 2, relief: 4, focusGain: 1, moodDelta: 3, stressDelta: -1, confDelta: 3, note: "momentum kept, depth not fully tested" },
+      { label: "Do ten more practice problems on it right away", effort: 7, relief: 2, focusGain: -2, moodDelta: 1, stressDelta: 3, confDelta: 4, note: "reinforces, but risks fatigue on a topic already understood" }
+    ]
+  },
+  {
+    prompt: "It's the night before results are declared.",
+    options: [
+      { label: "Do something unrelated and get proper sleep", effort: 1, relief: 6, focusGain: 4, moodDelta: 4, stressDelta: -7, confDelta: 1, note: "nothing left to prepare, rest is the useful action" },
+      { label: "Re-check every answer you remember from the exam", effort: 6, relief: -3, focusGain: -5, moodDelta: -5, stressDelta: 9, confDelta: -3, note: "no new information, pure rumination" },
+      { label: "Talk it through with a friend or family member", effort: 2, relief: 5, focusGain: 1, moodDelta: 3, stressDelta: -4, confDelta: 1, note: "shared processing, mild relief" }
+    ]
+  }
+];
+
+let state = { mood: 60, stress: 35, focus: 55, confidence: 50 };
+let step = 0;
+let memory = [];
+
+const clamp = (v) => Math.max(0, Math.min(100, v));
+
+function render(){
+  document.getElementById('barMood').style.width = state.mood + '%';
+  document.getElementById('valMood').textContent = Math.round(state.mood);
+  document.getElementById('barStress').style.width = state.stress + '%';
+  document.getElementById('valStress').textContent = Math.round(state.stress);
+  document.getElementById('barFocus').style.width = state.focus + '%';
+  document.getElementById('valFocus').textContent = Math.round(state.focus);
+  document.getElementById('barConf').style.width = state.confidence + '%';
+  document.getElementById('valConf').textContent = Math.round(state.confidence);
+
+  const memLog = document.getElementById('memLog');
+  if(memory.length === 0){
+    memLog.innerHTML = '<div class="empty-mem">No decisions recorded yet.</div>';
+  } else {
+    memLog.innerHTML = memory.slice().reverse().map(m => `
+      <div class="mem-item">
+        <div class="t">Decision ${m.index}</div>
+        <div class="d">${m.choice}</div>
+        <div class="delta">mood ${fmt(m.moodDelta)} · stress ${fmt(m.stressDelta)} · focus ${fmt(m.focusGain)} · confidence ${fmt(m.confDelta)}</div>
+      </div>
+    `).join('');
+  }
+  document.getElementById('progressLine').textContent = `Decision ${step} of ${scenarios.length}`;
+}
+
+function fmt(n){ return (n >= 0 ? '+' : '') + n; }
+
+function loadScenario(){
+  if(step >= scenarios.length){
+    document.getElementById('promptText').textContent = "Simulation complete. Reset to run it again with different choices.";
+    document.getElementById('optionsBox').innerHTML = '';
+    document.getElementById('analysisText').innerHTML = `<span class="verdict">Final state</span> — mood ${Math.round(state.mood)}, stress ${Math.round(state.stress)}, focus ${Math.round(state.focus)}, confidence ${Math.round(state.confidence)}. This reflects the cumulative shape of the choices above, not any single one.`;
+    return;
+  }
+  const sc = scenarios[step];
+  document.getElementById('promptText').textContent = sc.prompt;
+  document.getElementById('optionsBox').innerHTML = sc.options.map((o,i) => `
+    <button class="opt" data-i="${i}"><span>${o.label}</span><span class="k">choose →</span></button>
+  `).join('');
+  document.querySelectorAll('.opt').forEach(btn => {
+    btn.addEventListener('click', () => choose(parseInt(btn.dataset.i)));
+  });
+}
+
+function choose(i){
+  const sc = scenarios[step];
+  const o = sc.options[i];
+
+  state.mood = clamp(state.mood + o.moodDelta);
+  state.stress = clamp(state.stress + o.stressDelta);
+  state.focus = clamp(state.focus + o.focusGain);
+  state.confidence = clamp(state.confidence + o.confDelta);
+
+  step++;
+  memory.push({ index: step, choice: o.label, moodDelta: o.moodDelta, stressDelta: o.stressDelta, focusGain: o.focusGain, confDelta: o.confDelta });
+
+  const utility = (o.relief * 0.4 + o.focusGain * 0.35 + o.confDelta * 0.25).toFixed(1);
+  document.getElementById('analysisText').innerHTML =
+    `<span class="verdict">${o.note}</span>. Estimated net utility of this choice: ${utility} (weighted: 40% relief, 35% focus, 25% confidence). Effort cost logged as ${o.effort}/10.`;
+
+  render();
+  loadScenario();
+}
+
+document.getElementById('resetBtn').addEventListener('click', () => {
+  state = { mood: 60, stress: 35, focus: 55, confidence: 50 };
+  step = 0;
+  memory = [];
+  document.getElementById('analysisText').textContent = 'Make a choice to see the reasoning behind how it changed the state.';
+  render();
+  loadScenario();
+});
+
+render();
+loadScenario();
+</script>
+</body>
+</html>
